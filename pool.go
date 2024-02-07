@@ -60,12 +60,12 @@ type Pool struct {
 	// retrieveWorker 获取 worker 的逻辑是先尝试从 workers 队列中获取
 	// 如果没有，但还没达到设定的池容量上限，那就再创建一个 worker
 	// 但是不自己创建，而是使用 sync.Pool 即 workerCache 来创建
-	// TODO: 清理 worker 的时候应该也也是从队列归还到 workerCache 中
+	// 清理 worker 的时候应该也也是从队列归还到 workerCache 中
 
 	// waiting is the number of goroutines already been blocked on pool.Submit(), protected by pool.lock
 	waiting int32
 
-	// TODO: 从 Reboot 方法的逻辑来看，标识一个 pool 状态的要素：
+	// 从 Reboot 方法的逻辑来看，标识一个 pool 状态的要素：
 	// 1.state
 	// 2.purgeStaleWorkers 协程是否在执行
 	// 3.ticktock 协程是否在执行
@@ -201,7 +201,7 @@ func NewPool(size int, options ...Option) (*Pool, error) {
 	opts := loadOptions(options...)
 
 	if !opts.DisablePurge { // 如果需要定期清理 worker
-		if expiry := opts.ExpiryDuration; expiry < 0 { // TODO
+		if expiry := opts.ExpiryDuration; expiry < 0 {
 			return nil, ErrInvalidPoolExpiry
 		} else if expiry == 0 {
 			opts.ExpiryDuration = DefaultCleanIntervalTime
@@ -214,7 +214,7 @@ func NewPool(size int, options ...Option) (*Pool, error) {
 
 	p := &Pool{
 		capacity: int32(size),
-		lock:     syncx.NewSpinLock(), // TODO：是自定义的自旋锁，标准库中留了接口可以自定义锁
+		lock:     syncx.NewSpinLock(), // 自定义的自旋锁，标准库中留了接口可以自定义锁
 		options:  opts,
 	}
 	p.workerCache.New = func() interface{} { // sync.Pool 的用法，定义 New 函数
@@ -424,7 +424,7 @@ func (p *Pool) revertWorker(worker *goWorker) bool {
 	p.lock.Lock()
 	// To avoid memory leaks, add a double check in the lock scope.
 	// Issue: https://github.com/panjf2000/ants/issues/113
-	if p.IsClosed() { // TODO: 这里为什么要再检查一遍
+	if p.IsClosed() { // 这里需要重新检查，防止此时 pool 已经被关闭了
 		p.lock.Unlock()
 		return false
 	}

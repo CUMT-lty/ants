@@ -2,7 +2,7 @@ package ants
 
 import "time"
 
-// TODO: 这里面的操作都没有上锁，但是并发访问的问题是存在的，怎么解决，锁上在了哪里
+// workerQueue 中的操作都不能保证并发安全，使用要加锁
 
 // 基于数组实现的循环队列
 type loopQueue struct {
