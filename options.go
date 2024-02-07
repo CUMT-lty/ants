@@ -7,7 +7,7 @@ type Option func(opts *Options)
 
 func loadOptions(options ...Option) *Options {
 	opts := new(Options)
-	for _, option := range options {
+	for _, option := range options { // 选项模式
 		option(opts)
 	}
 	return opts

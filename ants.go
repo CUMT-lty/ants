@@ -75,16 +75,20 @@ var (
 	// workerChanCap determines whether the channel of a worker should be a buffered channel
 	// to get the best performance. Inspired by fasthttp at
 	// https://github.com/valyala/fasthttp/blob/master/workerpool.go#L139
+	// workerChanCap 这个方法用来决定 worker 的用来装任务的 task 通道是否设置缓冲空间
 	workerChanCap = func() int {
 		// Use blocking channel if GOMAXPROCS=1.
 		// This switches context from sender to receiver immediately,
 		// which results in higher performance (under go1.5 at least).
+		// 如果 GOMAXPROCS 设置为 1，即使用一个操作系统线程
+		// 向通道 task 发送任务会导致发送放阻塞，这样就会增加对任务消费 goroutine 的调度，可以提升处理任务的性能
 		if runtime.GOMAXPROCS(0) == 1 {
 			return 0
 		}
 
 		// Use non-blocking workerChan if GOMAXPROCS>1,
 		// since otherwise the sender might be dragged down if the receiver is CPU-bound.
+		// 如果 GOMAXPROCS 设置的大于 1，就使用带缓冲的通道，为了防止接收 goroutine CPU 密集而导致发送 goroutine 被阻塞
 		return 1
 	}()
 

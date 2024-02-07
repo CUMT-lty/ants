@@ -2,9 +2,12 @@ package ants
 
 import "time"
 
+// TODO: 这里面的操作都没有上锁，但是并发访问的问题是存在的，怎么解决，锁上在了哪里
+
+// 基于数组实现的循环队列
 type loopQueue struct {
 	items  []worker
-	expiry []worker
+	expiry []worker // 过期的 worker
 	head   int
 	tail   int
 	size   int
@@ -71,12 +74,15 @@ func (wq *loopQueue) detach() worker {
 }
 
 func (wq *loopQueue) refresh(duration time.Duration) []worker {
-	expiryTime := time.Now().Add(-duration)
-	index := wq.binarySearch(expiryTime)
+	expiryTime := time.Now().Add(-duration) // worker 中标记 lastUsed 上次使用时间，应该大于这个 expiryTime，小于等于它的全部应该被清理
+	// lastUsed 的更新时机是 worker 执行完一个任务被放回 workerQueue 的时候
+	// 所以这个过期时间指的是从执行完上一个任务到现在这个时间点的空窗期（没有任务可执行，一直阻塞在 run 处）
+	// queue 中的 worker 都是当前没有任务可执行，阻塞在 run 处的，需要定时被清理
+	index := wq.binarySearch(expiryTime) // workerQueue 是按 lastUsed 时间有序的
 	if index == -1 {
 		return nil
 	}
-	wq.expiry = wq.expiry[:0]
+	wq.expiry = wq.expiry[:0] // 这种写法是复用了底层的 slice 对象和其内部的数组指针
 
 	if wq.head <= index {
 		wq.expiry = append(wq.expiry, wq.items[wq.head:index+1]...)

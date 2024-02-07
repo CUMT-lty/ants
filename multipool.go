@@ -31,14 +31,15 @@ import (
 )
 
 // LoadBalancingStrategy represents the type of load-balancing algorithm.
-type LoadBalancingStrategy int
+type LoadBalancingStrategy int // 负载均衡策略
 
+// 两个负载均衡策略，体现在 next() 方法中
 const (
 	// RoundRobin distributes task to a list of pools in rotation.
-	RoundRobin LoadBalancingStrategy = 1 << (iota + 1)
+	RoundRobin LoadBalancingStrategy = 1 << (iota + 1) // 轮流分配
 
 	// LeastTasks always selects the pool with the least number of pending tasks.
-	LeastTasks
+	LeastTasks // 优先分配到待处理任务最少的池中（就是遍历一遍，取 running 最小的一个 pool）
 )
 
 // MultiPool consists of multiple pools, from which you will benefit the
@@ -46,6 +47,8 @@ const (
 // the lock contention.
 // MultiPool is a good fit for the scenario where you have a large number of
 // tasks to submit, and you don't want the single pool to be the bottleneck.
+// 适用场景：有大量任务需要提交到 pool
+// 原因：一个 pool 中只有一把锁，对所有 task 的调度都回去争用同一把锁，如果有多个 pool，就相当于有了多把锁，减少了大量协程对锁的争用
 type MultiPool struct {
 	pools []*Pool
 	index uint32
@@ -106,6 +109,7 @@ func (mp *MultiPool) Submit(task func()) (err error) {
 
 // Running returns the number of the currently running workers across all pools.
 func (mp *MultiPool) Running() (n int) {
+	// 这里感觉是不准确的，如果需要完全准确可能需要一个 pools 粒度下的全局锁，Waiting 同理
 	for _, pool := range mp.pools {
 		n += pool.Running()
 	}
